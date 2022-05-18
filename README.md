@@ -59,10 +59,12 @@ To access the app, use a program like postman to send requests to the following 
     {
         "name": string
         "inventoryId": string // must be an actual inventoryId in the database
-        "items": {
-            "id": int //must be an actual itemId in the database
-            "count" int //amount to be moved to shipment, returns status code 500 if not enough items in stock
-        }
+        "items": [
+            {
+                "id": int //must be an actual itemId in the database
+                "count" int //amount to be moved to shipment, returns status code 500 if not enough items in stock
+            }
+        ]
     }
     ```
 

@@ -11,7 +11,6 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi"
-	"gorm.io/gorm"
 )
 
 // InventoryCtx is a middleware which extracts the inventoryID from the URL path
@@ -27,13 +26,14 @@ func InventoryCtx(next http.Handler) http.Handler {
 
 		inventoryID, err := strconv.Atoi(inventoryIDParam)
 		if err != nil {
-			logger.Sugar.Errorf("failed to parse inventoryID from route: %+v", inventoryID)
+			logger.Sugar.Errorf("failed to parse inventoryID from route: %+v, err: %+v", inventoryID, err)
 			helper.ServeResponse(w, r, http.StatusNotFound, nil)
 			return
 		}
 
 		inventory, err := database.GetInventory(inventoryID)
 		if inventory == nil || err != nil {
+			logger.Sugar.Errorf("failed to get inventory from database for inventory id: %d, err:  %+v", inventoryID, err)
 			helper.ServeResponse(w, r, http.StatusNotFound, nil)
 			return
 		}
@@ -47,6 +47,7 @@ func GetInventories(w http.ResponseWriter, r *http.Request) {
 	logger.Sugar.Info("request received for GetInventories")
 	inventories, err := database.GetInventories()
 	if err != nil {
+		logger.Sugar.Errorf("failed to get inventories: %+v", err)
 		helper.ServeResponse(w, r, http.StatusInternalServerError, []byte(helper.UNKNOWN_ERROR))
 		return
 	}
@@ -55,8 +56,10 @@ func GetInventories(w http.ResponseWriter, r *http.Request) {
 		Count:       len(inventories),
 		Inventories: inventories,
 	}
+
 	body, err := json.Marshal(getInventoriesResponse)
 	if err != nil {
+		logger.Sugar.Errorf("failed to marshal response: %+v, err: %+v", body, err)
 		helper.ServeResponse(w, r, http.StatusInternalServerError, []byte(helper.UNKNOWN_ERROR))
 		return
 	}
@@ -68,17 +71,20 @@ func CreateInventory(w http.ResponseWriter, r *http.Request) {
 	logger.Sugar.Info("request received for CreateInventory")
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		logger.Sugar.Errorf("failed to read request body: %+v, err: %+v", body, err)
 		helper.ServeResponse(w, r, http.StatusBadRequest, []byte(helper.INVALID_BODY))
 		return
 	}
 
 	var createInventoryRequest CreateInventoryRequest
 	if err := json.Unmarshal(body, &createInventoryRequest); err != nil {
+		logger.Sugar.Errorf("failed to unmarshal request body: %+v, err: %+v", createInventoryRequest, err)
 		helper.ServeResponse(w, r, http.StatusBadRequest, []byte(helper.INVALID_BODY))
 		return
 	}
 
 	if err := database.CreateInventory(createInventoryRequest.Name); err != nil {
+		logger.Sugar.Errorf("failed to create inventory: %+v", err)
 		helper.ServeResponse(w, r, http.StatusInternalServerError, []byte(helper.UNKNOWN_ERROR))
 		return
 	}
@@ -92,10 +98,8 @@ func DeleteInventory(w http.ResponseWriter, r *http.Request) {
 	// shouldn't need to validate inventoryID since that's handled in middleware
 	inventoryID := r.Context().Value("inventoryID").(int)
 
-	if err := database.DeleteInventory(inventoryID); err == gorm.ErrRecordNotFound {
-		helper.ServeResponse(w, r, http.StatusNotFound, nil)
-		return
-	} else if err != nil {
+	if err := database.DeleteInventory(inventoryID); err != nil {
+		logger.Sugar.Errorf("failed to delete inventory: %+v", err)
 		helper.ServeResponse(w, r, http.StatusInternalServerError, []byte(helper.UNKNOWN_ERROR))
 		return
 	}
@@ -107,12 +111,14 @@ func UpdateInventory(w http.ResponseWriter, r *http.Request) {
 	logger.Sugar.Info("request received for UpdateInventory")
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		logger.Sugar.Errorf("failed to unmarshal request body: %+v, err: %+v", r.Body, err)
 		helper.ServeResponse(w, r, http.StatusBadRequest, []byte(helper.INVALID_BODY))
 		return
 	}
 
 	var updateInventoryRequest UpdateInventoryRequest
 	if err := json.Unmarshal(body, &updateInventoryRequest); err != nil {
+		logger.Sugar.Errorf("failed to unmarshal request body: %+v, err: %+v", updateInventoryRequest, err)
 		helper.ServeResponse(w, r, http.StatusBadRequest, []byte(helper.INVALID_BODY))
 		return
 	}
@@ -120,10 +126,8 @@ func UpdateInventory(w http.ResponseWriter, r *http.Request) {
 	// shouldn't need to validate inventoryID since that's handled in middleware
 	inventoryID := r.Context().Value("inventoryID").(int)
 
-	if err := database.UpdateInventory(inventoryID, updateInventoryRequest.Name); err == gorm.ErrRecordNotFound {
-		helper.ServeResponse(w, r, http.StatusNotFound, nil)
-		return
-	} else if err != nil {
+	if err := database.UpdateInventory(inventoryID, updateInventoryRequest.Name); err != nil {
+		logger.Sugar.Errorf("failed to update inventory: %+v", err)
 		helper.ServeResponse(w, r, http.StatusInternalServerError, []byte(helper.UNKNOWN_ERROR))
 		return
 	}

@@ -15,7 +15,6 @@ type CreateItemRequest struct {
 
 // UpdateItemRequest represents the request body for the UpdateItem PUT endpoint
 type UpdateItemRequest struct {
-	Name       string `json:"name"`
-	Count      int    `json:"count"`
-	ShipmentID *int   `json:"shipmentId"`
+	Name  string `json:"name"`
+	Count int    `json:"count"`
 }

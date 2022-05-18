@@ -48,23 +48,13 @@ func DeleteItem(itemID int) error {
 }
 
 // UpdateItem updates an item based on itemID
-// Throws an error if shipmentID doesn't exist in DB
-func UpdateItem(itemID int, count int, shipmentID *int, name string) error {
-	var shipment Shipment
-	result := DB.Where("shipment_id = ?", shipmentID).Find(&shipment)
-	if result.Error != nil {
-		return result.Error
-	} else if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-
+func UpdateItem(itemID int, count int, name string) error {
 	item := Item{
-		Name:       name,
-		ShipmentID: shipmentID,
-		Count:      count,
+		Name:  name,
+		Count: count,
 	}
 
-	result = DB.Model(&Item{}).Where("id = ?", itemID).Updates(item)
+	result := DB.Model(&Item{}).Where("id = ?", itemID).Updates(item)
 	if result.Error == nil && result.RowsAffected == 0 {
 		return gorm.ErrRecordNotFound
 	}

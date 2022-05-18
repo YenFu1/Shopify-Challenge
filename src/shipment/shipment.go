@@ -45,12 +45,14 @@ func CreateShipment(w http.ResponseWriter, r *http.Request) {
 	logger.Sugar.Info("request received for CreateShipment")
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		logger.Sugar.Errorf("failed to read request body: %+v, err: %+v", r.Body, err)
 		helper.ServeResponse(w, r, http.StatusBadRequest, []byte(helper.INVALID_BODY))
 		return
 	}
 
 	var createShipmentRequest CreateShipmentRequest
 	if err := json.Unmarshal(body, &createShipmentRequest); err != nil {
+		logger.Sugar.Errorf("failed to unmarshal request body: %+v, err: %+v", createShipmentRequest, err)
 		helper.ServeResponse(w, r, http.StatusBadRequest, []byte(helper.INVALID_BODY))
 		return
 	}

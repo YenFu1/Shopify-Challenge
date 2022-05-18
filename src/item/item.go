@@ -51,6 +51,7 @@ func GetItems(w http.ResponseWriter, r *http.Request) {
 
 	items, err := database.GetItemsByInventoryID(inventoryID)
 	if err != nil {
+		logger.Sugar.Errorf("failed to get items: %+v", err)
 		helper.ServeResponse(w, r, http.StatusInternalServerError, []byte(helper.UNKNOWN_ERROR))
 		return
 	}
@@ -62,6 +63,7 @@ func GetItems(w http.ResponseWriter, r *http.Request) {
 
 	body, err := json.Marshal(getItemsResponse)
 	if err != nil {
+		logger.Sugar.Errorf("failed to marshal response: %+v", getItemsResponse)
 		helper.ServeResponse(w, r, http.StatusInternalServerError, []byte(helper.UNKNOWN_ERROR))
 		return
 	}
@@ -73,21 +75,22 @@ func CreateItem(w http.ResponseWriter, r *http.Request) {
 	logger.Sugar.Info("request received for CreateItem")
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		logger.Sugar.Errorf("failed to read request body: %+v, err: %+v", r.Body, err)
 		helper.ServeResponse(w, r, http.StatusBadRequest, []byte(helper.INVALID_BODY))
 		return
 	}
 
 	var createItemRequest CreateItemRequest
 	if err := json.Unmarshal(body, &createItemRequest); err != nil {
+		logger.Sugar.Errorf("failed to unmarshal body: %+v, err: %+v", createItemRequest, err)
 		helper.ServeResponse(w, r, http.StatusBadRequest, []byte(helper.INVALID_BODY))
 		return
 	}
 
 	// shouldn't need to validate inventoryID since that's handled in middleware
 	inventoryID := r.Context().Value("inventoryID").(int)
-
-	// represent all items that don't belong to a shipment with shipmentID = -1
 	if err := database.CreateItem(&inventoryID, nil, createItemRequest.Count, createItemRequest.Name); err != nil {
+		logger.Sugar.Errorf("failed to create item: %+v", err)
 		helper.ServeResponse(w, r, http.StatusInternalServerError, []byte(helper.UNKNOWN_ERROR))
 		return
 	}
@@ -102,6 +105,7 @@ func DeleteItem(w http.ResponseWriter, r *http.Request) {
 	itemID := r.Context().Value("itemID").(int)
 
 	if err := database.DeleteItem(itemID); err != nil {
+		logger.Sugar.Errorf("failed to delete item: %+v", err)
 		helper.ServeResponse(w, r, http.StatusInternalServerError, []byte(helper.UNKNOWN_ERROR))
 		return
 	}
@@ -114,23 +118,26 @@ func UpdateItem(w http.ResponseWriter, r *http.Request) {
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		logger.Sugar.Errorf("failed to read request body: %+v, err: %+v", r.Body, err)
 		helper.ServeResponse(w, r, http.StatusBadRequest, []byte(helper.INVALID_BODY))
 		return
 	}
 
 	var updateItemRequest UpdateItemRequest
 	if err := json.Unmarshal(body, &updateItemRequest); err != nil {
+		logger.Sugar.Errorf("failed to unmarshal request body: %+v, err: %+v", updateItemRequest, err)
 		helper.ServeResponse(w, r, http.StatusBadRequest, []byte(helper.INVALID_BODY))
 		return
 	}
 
 	// shouldn't need to validate itemID since that's handled in middleware
 	itemID := r.Context().Value("itemID").(int)
-	if err := database.UpdateItem(itemID,
+	if err := database.UpdateItem(
+		itemID,
 		updateItemRequest.Count,
-		updateItemRequest.ShipmentID,
 		updateItemRequest.Name,
 	); err != nil {
+		logger.Sugar.Errorf("failed to update item: %+v", err)
 		helper.ServeResponse(w, r, http.StatusInternalServerError, []byte(helper.UNKNOWN_ERROR))
 		return
 	}
